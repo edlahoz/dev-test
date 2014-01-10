@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Socket.io Chat Server</title>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="/style/style.css">
+</head>
+<body>
+	<script>
+	var socket;	
+
+	//declaring var to check if first connection
+	var firstconnect = true;
+
+	//getting date and customizing the output
+	var date = new Date();
+	var dateC = date.getMonth() + "-" + date.getDate() + "-" + date.getFullYear();
+
+	function connect(){
+		if(firstconnect) {
+		socket = io.connect(null);
+
+
+
+		//callbacks for standard socket.io server events
+		
+		socket.on('connect', function(){
+			$('#status').html('Connected to Server. <span style="color:black;text-shadow:0px 0px 13px red;">Type in a movie title of your liking to find out more about it</span>');
+		});
+		
+		socket.on('disconnect', function(){
+			$('#status').html('Disconnected from Server');
+		});
+		
+		socket.on('reconnecting', function( nextRetry ){
+			$('#status').html('Reconnecting in ' + nextRetry + ' miliseconds');
+		});
+		
+		socket.on('reconnect_failed', function(){
+			$('#status').html('Reconnect Failed');
+		});
+
+		//callback for the custom 'chat' event
+		socket.on('chat', function(client, message){
+			$('#messages').append('<strong style="padding:2px;background:#acacac;border:1px solid #666;">' + client + ':</strong> ' + message + ' ~ <span style="font-style:italic;color:#777;font-size:12px;">' + dateC + '</span><br>');
+		});
+
+		//receiving documents and displaying
+		socket.on('Displaying movies', function(docs){
+			if(docs.length === null || docs.length === undefined || docs.length === 0 || docs.length < 1){
+				$('#messages').append('Sorry, we could not find it. Please try the command "show all" to get a list of all the movies<br>');
+			}
+			else{
+				$('#messages').append('Please hover over your result to get more information');
+			    for(var i=0; i < docs.length; i++){
+			      $('#messages').append('<li onClick="dspDetails()" class="movie-title"><strong  title="'
+			      	+ docs[i].TitleType 
+			      	+'">' 
+			      	+ docs[i].TitleName 
+			      	+ ' (' 
+			      	+ docs[i].ReleaseYear 
+			      	+ ')</span><div style="display:none;" class="movie-info"><em>Genres:</em> <p>' 
+			        + docs[i].Genres 
+			        + '</p></div></li> ');
+			    }
+			    $('#messages').append('<br>');
+		    }
+		  });
+
+		//set the var to false as client has already connected and thus allow the else to run and permit reconnection
+		firstconnect = false;
+		}//end if 
+		else {
+			socket.socket.reconnect();
+		}
+	}
+
+	function disconnect(){
+		socket.disconnect();
+	}
+
+	function send(){
+		if($('#message').val() != ''){
+			socket.send($('#message').val());
+			$('#message').val('');$('#message').focus();}
+		else{
+			$('#messages').append('<span style="color:red;">Please write something</span><br>');
+		}
+	}
+
+	//adding enter functionality
+	function sendChatMsg(e) {
+        if (e.keyCode == 13 && $('#message').focus()) {
+            send(e);
+	    }
+	}
+
+	//On the run, I hate my life, show movie function
+	function dspDetails(){
+		$(".movie-info").show();
+	}
+
+	</script>
+	
+	<div class="super-container nav-bar shadow-bottom color-text">
+		<div class="container">
+			<h1 class="color-text center" style="padding:10px;">Reel Guru Movie Helper</h1>
+		</div>
+	</div>
+
+	<div class="container right" style="margin-bottom:10px;">
+		<!-- connect -->
+		<button id="connect" style="padding:2px;" onClick="connect()">Connect</button>
+
+		<!-- disconnect -->
+		<button id="disconnect" style="padding:2px;" onClick="disconnect()">Disconnect</button>
+
+		
+	</div>
+
+	<div class="container">
+		
+		<div class="message-container">
+			<div class="message-panel">
+
+				<!-- output messages panel -->
+				<div class="output-panel">
+					<!-- status -->
+					<label id="status" style="margin-bottom:10px;">Reel Guru Movie Helper: <span style="font-weight:normal;">Press the connect button to begin the search and connect to our server.</span></label>
+					<div id="messages"></div>
+				</div>
+				
+
+
+				<!-- send message -->
+				<div>
+					<span style="display:block;padding:5px;background:white;border-radius:0em 0em 0.5em 0.5em;">
+						<input type="text" onkeypress="sendChatMsg(event)" id="message">
+					</span>
+				</div>
+
+			</div>
+		</div>
+
+	</div>
+	
+	<!-- footer -->
+	<div class="super-container footer">
+		<div class="container">
+			<h5 class="center" style="padding:10px;font-size:13px;">&copy; Developed &amp; Designed by <a href="http://www.behance.net/edlahoz" target="_blank">Eduardo La Hoz</a> - 2013</h5>
+		</div>
+	</div>
+
+</body>
+</html>
